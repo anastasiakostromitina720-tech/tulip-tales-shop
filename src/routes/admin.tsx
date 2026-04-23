@@ -38,11 +38,11 @@ function AdminLayout() {
     );
   }
 
-  const nav = [
+  const nav: { to: "/admin" | "/admin/orders" | "/admin/products"; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
     { to: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true },
     { to: "/admin/orders", label: "Заявки", icon: ClipboardList },
     { to: "/admin/products", label: "Товары", icon: Package },
-  ] as const;
+  ];
 
   return (
     <div className="min-h-screen flex">
