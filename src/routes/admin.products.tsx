@@ -166,113 +166,113 @@ function ProductDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end overflow-hidden" onClick={onClose}>
-      <form
-        onSubmit={save}
-        className="bg-background w-full sm:max-w-xl h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+    <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-xl p-0 flex flex-col h-[100dvh] sm:max-w-xl"
       >
-        <div className="flex justify-between items-start p-5 sm:p-8 pb-4 border-b border-border shrink-0">
-          <h2 className="text-2xl font-serif italic">{"id" in form && form.id ? "Редактировать" : "Новый товар"}</h2>
-          <button type="button" onClick={onClose} className="p-2 hover:bg-muted rounded-full"><X className="h-4 w-4" /></button>
-        </div>
-        <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-8 space-y-4 [-webkit-overflow-scrolling:touch]">
+        <form onSubmit={save} className="flex flex-col h-full min-h-0">
+          <div className="flex justify-between items-start p-5 sm:p-8 pb-4 border-b border-border shrink-0">
+            <h2 className="text-2xl font-serif italic">{"id" in form && form.id ? "Редактировать" : "Новый товар"}</h2>
+            <button type="button" onClick={onClose} className="p-2 hover:bg-muted rounded-full" aria-label="Закрыть"><X className="h-4 w-4" /></button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-8 space-y-4">
+            <FormField l="Название">
+              <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={200} />
+            </FormField>
+            <FormField l="Описание">
+              <textarea className="input min-h-[80px]" value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
+            </FormField>
+            <FormField l="Состав">
+              <input className="input" value={form.composition ?? ""} onChange={(e) => setForm({ ...form, composition: e.target.value })} maxLength={500} />
+            </FormField>
 
-        <FormField l="Название">
-          <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={200} />
-        </FormField>
-        <FormField l="Описание">
-          <textarea className="input min-h-[80px]" value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
-        </FormField>
-        <FormField l="Состав">
-          <input className="input" value={form.composition ?? ""} onChange={(e) => setForm({ ...form, composition: e.target.value })} maxLength={500} />
-        </FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField l="Цена, ₽">
+                <input type="number" min={0} className="input" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required />
+              </FormField>
+              <FormField l="Кол-во стеблей">
+                <input type="number" min={0} className="input" value={form.stems_count ?? ""} onChange={(e) => setForm({ ...form, stems_count: e.target.value ? Number(e.target.value) : null })} />
+              </FormField>
+              <FormField l="Тип">
+                <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as Product["type"] })}>
+                  <option value="bouquet">Букет</option>
+                  <option value="by_stem">Поштучно</option>
+                </select>
+              </FormField>
+              <FormField l="Цвет">
+                <select className="input" value={form.color ?? "pink"} onChange={(e) => setForm({ ...form, color: e.target.value })}>
+                  <option value="pink">Розовые</option>
+                  <option value="white">Белые</option>
+                  <option value="yellow">Жёлтые</option>
+                  <option value="red">Красные</option>
+                  <option value="mix">Микс</option>
+                  <option value="peony">Пионовидные</option>
+                </select>
+              </FormField>
+            </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField l="Цена, ₽">
-            <input type="number" min={0} className="input" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required />
-          </FormField>
-          <FormField l="Кол-во стеблей">
-            <input type="number" min={0} className="input" value={form.stems_count ?? ""} onChange={(e) => setForm({ ...form, stems_count: e.target.value ? Number(e.target.value) : null })} />
-          </FormField>
-          <FormField l="Тип">
-            <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as Product["type"] })}>
-              <option value="bouquet">Букет</option>
-              <option value="by_stem">Поштучно</option>
-            </select>
-          </FormField>
-          <FormField l="Цвет">
-            <select className="input" value={form.color ?? "pink"} onChange={(e) => setForm({ ...form, color: e.target.value })}>
-              <option value="pink">Розовые</option>
-              <option value="white">Белые</option>
-              <option value="yellow">Жёлтые</option>
-              <option value="red">Красные</option>
-              <option value="mix">Микс</option>
-              <option value="peony">Пионовидные</option>
-            </select>
-          </FormField>
-        </div>
-
-        <FormField l="Фотографии">
-          <div className="space-y-3">
-            {(form.images ?? []).length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {form.images.map((src, i) => (
-                  <div key={i} className="relative group">
-                    <img src={resolveImage(src)} className="aspect-square rounded-xl object-cover w-full" alt="" />
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }))}
-                      className="absolute top-1 right-1 bg-background/80 backdrop-blur p-1 rounded-full opacity-0 group-hover:opacity-100"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+            <FormField l="Фотографии">
+              <div className="space-y-3">
+                {(form.images ?? []).length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {form.images.map((src, i) => (
+                      <div key={i} className="relative group">
+                        <img src={resolveImage(src)} className="aspect-square rounded-xl object-cover w-full" alt="" />
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }))}
+                          className="absolute top-1 right-1 bg-background/80 backdrop-blur p-1 rounded-full opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadImage(f);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm hover:border-primary disabled:opacity-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Загружаем..." : "Загрузить фото"}
+                </button>
               </div>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) uploadImage(f);
-                e.target.value = "";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm hover:border-primary disabled:opacity-50"
-            >
-              <Upload className="h-4 w-4" />
-              {uploading ? "Загружаем..." : "Загрузить фото"}
+            </FormField>
+
+            <div className="flex flex-wrap gap-x-6 gap-y-3 pb-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={form.in_stock} onChange={(e) => setForm({ ...form, in_stock: e.target.checked })} />
+                В наличии
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+                Показывать на сайте
+              </label>
+            </div>
+          </div>
+
+          <div className="p-5 sm:p-8 pt-4 border-t border-border bg-background shrink-0">
+            <button type="submit" disabled={saving} className="w-full rounded-full bg-primary text-primary-foreground py-3 text-sm font-medium hover:opacity-90 disabled:opacity-50">
+              {saving ? "Сохраняем..." : "Сохранить"}
             </button>
           </div>
-        </FormField>
-
-          <div className="flex flex-wrap gap-x-6 gap-y-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.in_stock} onChange={(e) => setForm({ ...form, in_stock: e.target.checked })} />
-              В наличии
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
-              Показывать на сайте
-            </label>
-          </div>
-        </div>
-
-        <div className="p-5 sm:p-8 pt-4 border-t border-border bg-background shrink-0">
-          <button type="submit" disabled={saving} className="w-full rounded-full bg-primary text-primary-foreground py-3 text-sm font-medium hover:opacity-90 disabled:opacity-50">
-            {saving ? "Сохраняем..." : "Сохранить"}
-          </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </SheetContent>
+    </Sheet>
   );
 }
 
