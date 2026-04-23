@@ -165,12 +165,17 @@ function ProductDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
-      <form onSubmit={save} className="bg-background w-full max-w-xl h-full overflow-y-auto p-8 space-y-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-start">
+    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end overflow-hidden" onClick={onClose}>
+      <form
+        onSubmit={save}
+        className="bg-background w-full sm:max-w-xl h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start p-5 sm:p-8 pb-4 border-b border-border shrink-0">
           <h2 className="text-2xl font-serif italic">{"id" in form && form.id ? "Редактировать" : "Новый товар"}</h2>
           <button type="button" onClick={onClose} className="p-2 hover:bg-muted rounded-full"><X className="h-4 w-4" /></button>
         </div>
+        <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-8 space-y-4 [-webkit-overflow-scrolling:touch]">
 
         <FormField l="Название">
           <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={200} />
@@ -248,20 +253,23 @@ function ProductDrawer({
           </div>
         </FormField>
 
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.in_stock} onChange={(e) => setForm({ ...form, in_stock: e.target.checked })} />
-            В наличии
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
-            Показывать на сайте
-          </label>
+          <div className="flex flex-wrap gap-x-6 gap-y-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.in_stock} onChange={(e) => setForm({ ...form, in_stock: e.target.checked })} />
+              В наличии
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+              Показывать на сайте
+            </label>
+          </div>
         </div>
 
-        <button type="submit" disabled={saving} className="w-full rounded-full bg-primary text-primary-foreground py-3 text-sm font-medium hover:opacity-90 disabled:opacity-50">
-          {saving ? "Сохраняем..." : "Сохранить"}
-        </button>
+        <div className="p-5 sm:p-8 pt-4 border-t border-border bg-background shrink-0">
+          <button type="submit" disabled={saving} className="w-full rounded-full bg-primary text-primary-foreground py-3 text-sm font-medium hover:opacity-90 disabled:opacity-50">
+            {saving ? "Сохраняем..." : "Сохранить"}
+          </button>
+        </div>
       </form>
     </div>
   );
