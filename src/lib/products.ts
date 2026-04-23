@@ -43,3 +43,38 @@ export const typeLabels: Record<string, string> = {
   bouquet: "Букет",
   by_stem: "Поштучно",
 };
+
+export type PackagingOption = {
+  id: "kraft" | "ribbon" | "tissue" | "none";
+  label: string;
+  priceDelta: number;
+};
+
+export const packagingOptions: PackagingOption[] = [
+  { id: "kraft", label: "Крафт-бумага", priceDelta: 0 },
+  { id: "ribbon", label: "Атласная лента", priceDelta: 300 },
+  { id: "tissue", label: "Прозрачная плёнка", priceDelta: 200 },
+  { id: "none", label: "Без упаковки", priceDelta: -200 },
+];
+
+export const CARD_PRICE = 150;
+
+export const stemVariantsFor = (baseStems: number | null): number[] => {
+  if (!baseStems || baseStems <= 1) return [];
+  const all = [15, 25, 35, 51, 75, 101];
+  const set = new Set<number>(all);
+  set.add(baseStems);
+  return Array.from(set).sort((a, b) => a - b);
+};
+
+export function computeVariantPrice(
+  basePrice: number,
+  baseStems: number | null,
+  selectedStems: number,
+  packagingDelta: number,
+  withCard: boolean,
+): number {
+  const perStem = baseStems && baseStems > 0 ? basePrice / baseStems : basePrice;
+  const stemsPrice = Math.round(perStem * selectedStems);
+  return stemsPrice + packagingDelta + (withCard ? CARD_PRICE : 0);
+}
