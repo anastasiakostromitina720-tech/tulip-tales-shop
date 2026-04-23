@@ -140,7 +140,7 @@ function ProductPage() {
     const variantKey = `${product.id}__${stems ?? "x"}__${packagingId}__${withCard ? "c" : "n"}`;
     const variantName = `${product.name} · ${buildVariantSummary()}`;
     cart.add(
-      { productId: variantKey, name: variantName, price: unitPrice, image: mainImg },
+      { productId: variantKey, realProductId: product.id, name: variantName, price: unitPrice, image: mainImg },
       qty,
     );
     toast.success("Добавлено в корзину");

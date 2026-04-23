@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 export type CartItem = {
   productId: string;
+  realProductId?: string;
   name: string;
   price: number;
   image: string;
