@@ -169,14 +169,15 @@ function ProductDrawer({
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-xl p-0 flex flex-col h-[100dvh] sm:max-w-xl"
+        className="flex h-[100dvh] w-screen max-w-none flex-col overflow-hidden p-0 sm:w-[42rem] sm:max-w-[42rem]"
       >
-        <form onSubmit={save} className="flex flex-col h-full min-h-0">
-          <div className="flex justify-between items-start p-5 sm:p-8 pb-4 border-b border-border shrink-0">
+        <form onSubmit={save} className="flex h-full min-h-0 flex-col overflow-hidden">
+          <div className="flex shrink-0 items-start justify-between border-b border-border bg-background px-4 py-4 sm:px-6 sm:py-5">
             <h2 className="text-2xl font-serif italic">{"id" in form && form.id ? "Редактировать" : "Новый товар"}</h2>
             <button type="button" onClick={onClose} className="p-2 hover:bg-muted rounded-full" aria-label="Закрыть"><X className="h-4 w-4" /></button>
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-8 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
+            <div className="space-y-4 pb-6">
             <FormField l="Название">
               <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={200} />
             </FormField>
@@ -187,7 +188,7 @@ function ProductDrawer({
               <input className="input" value={form.composition ?? ""} onChange={(e) => setForm({ ...form, composition: e.target.value })} maxLength={500} />
             </FormField>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <FormField l="Цена, ₽">
                 <input type="number" min={0} className="input" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required />
               </FormField>
@@ -215,7 +216,7 @@ function ProductDrawer({
             <FormField l="Фотографии">
               <div className="space-y-3">
                 {(form.images ?? []).length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {form.images.map((src, i) => (
                       <div key={i} className="relative group">
                         <img src={resolveImage(src)} className="aspect-square rounded-xl object-cover w-full" alt="" />
@@ -263,9 +264,10 @@ function ProductDrawer({
                 Показывать на сайте
               </label>
             </div>
+            </div>
           </div>
 
-          <div className="p-5 sm:p-8 pt-4 border-t border-border bg-background shrink-0">
+          <div className="shrink-0 border-t border-border bg-background px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-5">
             <button type="submit" disabled={saving} className="w-full rounded-full bg-primary text-primary-foreground py-3 text-sm font-medium hover:opacity-90 disabled:opacity-50">
               {saving ? "Сохраняем..." : "Сохранить"}
             </button>
