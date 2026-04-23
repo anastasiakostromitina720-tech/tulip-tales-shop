@@ -65,7 +65,7 @@ function CartPage() {
 
       const items = cart.items.map((i) => ({
         order_id: order.id,
-        product_id: i.productId,
+        product_id: i.realProductId ?? i.productId,
         product_name: i.name,
         quantity: i.quantity,
         price: i.price,
