@@ -18,6 +18,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CatalogIndexRouteImport } from './routes/catalog.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as CatalogIdRouteImport } from './routes/catalog.$id'
 import { Route as CartThanksRouteImport } from './routes/cart.thanks'
@@ -70,6 +71,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogIndexRoute = CatalogIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CatalogRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -117,12 +123,12 @@ export interface FileRoutesByFullPath {
   '/cart/thanks': typeof CartThanksRoute
   '/catalog/$id': typeof CatalogIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/catalog/': typeof CatalogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/cart': typeof CartRouteWithChildren
-  '/catalog': typeof CatalogRouteWithChildren
   '/contacts': typeof ContactsRoute
   '/delivery': typeof DeliveryRoute
   '/oferta': typeof OfertaRoute
@@ -133,6 +139,7 @@ export interface FileRoutesByTo {
   '/cart/thanks': typeof CartThanksRoute
   '/catalog/$id': typeof CatalogIdRoute
   '/admin': typeof AdminIndexRoute
+  '/catalog': typeof CatalogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,6 +158,7 @@ export interface FileRoutesById {
   '/cart/thanks': typeof CartThanksRoute
   '/catalog/$id': typeof CatalogIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/catalog/': typeof CatalogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,12 +178,12 @@ export interface FileRouteTypes {
     | '/cart/thanks'
     | '/catalog/$id'
     | '/admin/'
+    | '/catalog/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/cart'
-    | '/catalog'
     | '/contacts'
     | '/delivery'
     | '/oferta'
@@ -186,6 +194,7 @@ export interface FileRouteTypes {
     | '/cart/thanks'
     | '/catalog/$id'
     | '/admin'
+    | '/catalog'
   id:
     | '__root__'
     | '/'
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/cart/thanks'
     | '/catalog/$id'
     | '/admin/'
+    | '/catalog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -282,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalog/': {
+      id: '/catalog/'
+      path: '/'
+      fullPath: '/catalog/'
+      preLoaderRoute: typeof CatalogIndexRouteImport
+      parentRoute: typeof CatalogRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -355,10 +372,12 @@ const CartRouteWithChildren = CartRoute._addFileChildren(CartRouteChildren)
 
 interface CatalogRouteChildren {
   CatalogIdRoute: typeof CatalogIdRoute
+  CatalogIndexRoute: typeof CatalogIndexRoute
 }
 
 const CatalogRouteChildren: CatalogRouteChildren = {
   CatalogIdRoute: CatalogIdRoute,
+  CatalogIndexRoute: CatalogIndexRoute,
 }
 
 const CatalogRouteWithChildren =
