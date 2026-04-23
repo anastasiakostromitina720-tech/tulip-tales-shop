@@ -165,12 +165,17 @@ function ProductDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
-      <form onSubmit={save} className="bg-background w-full max-w-xl h-full overflow-y-auto p-8 space-y-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-start">
+    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end overflow-hidden" onClick={onClose}>
+      <form
+        onSubmit={save}
+        className="bg-background w-full sm:max-w-xl h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start p-5 sm:p-8 pb-4 border-b border-border shrink-0">
           <h2 className="text-2xl font-serif italic">{"id" in form && form.id ? "Редактировать" : "Новый товар"}</h2>
           <button type="button" onClick={onClose} className="p-2 hover:bg-muted rounded-full"><X className="h-4 w-4" /></button>
         </div>
+        <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-8 space-y-4 [-webkit-overflow-scrolling:touch]">
 
         <FormField l="Название">
           <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={200} />
