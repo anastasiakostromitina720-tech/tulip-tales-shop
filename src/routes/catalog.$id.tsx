@@ -46,18 +46,44 @@ function ProductPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase
-      .from("products")
-      .select("id,name,description,composition,price,color,type,stems_count,images")
-      .eq("id", id)
-      .eq("active", true)
-      .maybeSingle()
-      .then(({ data }) => {
+    let cancelled = false;
+
+    async function loadProduct() {
+      setLoading(true);
+
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id,name,description,composition,price,color,type,stems_count,images")
+          .eq("id", id)
+          .eq("active", true)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (cancelled) return;
+
         const p = data as Product | null;
         setProduct(p);
-        if (p?.stems_count && p.stems_count > 1) setStems(p.stems_count);
-        setLoading(false);
-      });
+        setActiveImg(0);
+        setQty(1);
+        setWithCard(false);
+        setCardText("");
+        setPackagingId("kraft");
+        setStems(p?.stems_count && p.stems_count > 1 ? p.stems_count : null);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load product", error);
+        setProduct(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadProduct();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const isBouquet = product?.type === "bouquet";
