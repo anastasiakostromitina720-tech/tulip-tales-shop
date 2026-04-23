@@ -48,9 +48,12 @@ function CartPage() {
     }
     setSubmitting(true);
     try {
-      const { data: order, error } = await supabase
+      const orderId = crypto.randomUUID();
+
+      const { error: orderError } = await supabase
         .from("orders")
         .insert({
+          id: orderId,
           customer_name: parsed.data.customer_name,
           phone: parsed.data.phone,
           address: parsed.data.address || null,
@@ -58,26 +61,37 @@ function CartPage() {
           delivery_time: parsed.data.delivery_time || null,
           comment: parsed.data.comment || null,
           total: cart.total,
-        })
-        .select("id")
-        .single();
-      if (error || !order) throw error ?? new Error("Не удалось создать заявку");
+        });
+
+      if (orderError) {
+        throw new Error(`ORDER_CREATE_FAILED:${orderError.message}`);
+      }
 
       const items = cart.items.map((i) => ({
-        order_id: order.id,
+        order_id: orderId,
         product_id: i.realProductId ?? i.productId,
         product_name: i.name,
         quantity: i.quantity,
         price: i.price,
       }));
       const { error: itemsErr } = await supabase.from("order_items").insert(items);
-      if (itemsErr) throw itemsErr;
+      if (itemsErr) {
+        throw new Error(`ORDER_ITEMS_CREATE_FAILED:${itemsErr.message}`);
+      }
 
       cart.clear();
       navigate({ to: "/cart/thanks" });
     } catch (err) {
       console.error(err);
-      toast.error("Не удалось отправить заявку. Попробуйте ещё раз.");
+      const message = err instanceof Error ? err.message : "";
+
+      if (message.startsWith("ORDER_CREATE_FAILED:")) {
+        toast.error("Не удалось создать заявку. Попробуйте ещё раз.");
+      } else if (message.startsWith("ORDER_ITEMS_CREATE_FAILED:")) {
+        toast.error("Заявка создана, но товары не добавились. Попробуйте ещё раз.");
+      } else {
+        toast.error("Не удалось отправить заявку. Попробуйте ещё раз.");
+      }
     } finally {
       setSubmitting(false);
     }
