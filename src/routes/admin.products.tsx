@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, resolveImage } from "@/lib/products";
 import { toast } from "sonner";
