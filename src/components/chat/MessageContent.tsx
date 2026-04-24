@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveImage } from "@/lib/products";
 
 const PHOTO_RE = /\[\[photo:([0-9a-fA-F-]{36})\]\]/g;
 
@@ -105,7 +106,7 @@ function PhotoCard({ id, linkProducts }: { id: string; linkProducts: boolean }) 
     <div className="rounded-xl overflow-hidden border border-border bg-background hover:shadow-md transition-shadow">
       {product.image ? (
         <img
-          src={product.image}
+          src={resolveImage(product.image)}
           alt={product.name}
           loading="lazy"
           className="w-full h-40 object-cover"
