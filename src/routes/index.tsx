@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Truck, Sparkles, Heart } from "lucide-react";
+import { ArrowRight, Truck, Sparkles, Heart, Search } from "lucide-react";
 import { SiteLayout } from "@/components/SiteLayout";
 import { ProductCard, type ProductCardData } from "@/components/ProductCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +60,7 @@ function HomePage() {
                 to="/catalog"
                 className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:opacity-90 transition-opacity"
               >
-                Смотреть каталог <ArrowRight className="h-4 w-4" />
+                <Search className="h-4 w-4" /> Смотреть каталог <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/delivery"
