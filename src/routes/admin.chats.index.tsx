@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 
-export const Route = createFileRoute("/admin/chats")({
+export const Route = createFileRoute("/admin/chats/")({
   component: AdminChatsPage,
 });
 
