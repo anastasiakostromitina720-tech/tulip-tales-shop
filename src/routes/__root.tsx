@@ -38,10 +38,15 @@ export const Route = createRootRoute({
         content:
           "Свежие тюльпаны и авторские букеты с доставкой по Москве. Срезаем утром — привозим в тот же день.",
       },
-      { property: "og:title", content: "Тюльпаны · Москва" },
-      { property: "og:description", content: "Букеты тюльпанов с доставкой по Москве." },
+      { property: "og:title", content: "Тюльпаны · Москва — букеты с доставкой" },
+      { property: "og:description", content: "Свежие тюльпаны с доставкой по Москве" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Тюльпаны · Москва — букеты с доставкой" },
+      { name: "description", content: "Свежие тюльпаны с доставкой по Москве" },
+      { name: "twitter:description", content: "Свежие тюльпаны с доставкой по Москве" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/db6ea594-3598-4f7f-997d-6003256cd5c3" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/db6ea594-3598-4f7f-997d-6003256cd5c3" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
