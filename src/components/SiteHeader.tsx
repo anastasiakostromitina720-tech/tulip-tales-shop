@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ShoppingBag, Menu, X, Phone } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/cart";
+import { ThemeToggle } from "./ThemeToggle";
 
 const nav = [
   { to: "/catalog", label: "Каталог" },
