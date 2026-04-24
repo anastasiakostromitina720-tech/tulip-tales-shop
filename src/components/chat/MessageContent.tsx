@@ -40,17 +40,30 @@ async function loadProduct(id: string): Promise<ProductPreview | null> {
   return p;
 }
 
+function sanitize(raw: string): string {
+  return raw
+    // strip markdown images: ![alt](url)
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    // strip <img ...> tags
+    .replace(/<img\b[^>]*>/gi, "")
+    // strip bare image urls
+    .replace(/https?:\/\/\S+\.(?:png|jpe?g|webp|gif|svg)(?:\?\S*)?/gi, "")
+    // collapse 3+ blank lines
+    .replace(/\n{3,}/g, "\n\n");
+}
+
 export function MessageContent({ content, linkProducts = true }: { content: string; linkProducts?: boolean }) {
+  const cleaned = sanitize(content);
   // Split content into text + photo parts in render order
   const parts: Array<{ type: "text"; value: string } | { type: "photo"; id: string }> = [];
   let lastIndex = 0;
-  for (const match of content.matchAll(PHOTO_RE)) {
+  for (const match of cleaned.matchAll(PHOTO_RE)) {
     const idx = match.index ?? 0;
-    if (idx > lastIndex) parts.push({ type: "text", value: content.slice(lastIndex, idx) });
+    if (idx > lastIndex) parts.push({ type: "text", value: cleaned.slice(lastIndex, idx) });
     parts.push({ type: "photo", id: match[1] });
     lastIndex = idx + match[0].length;
   }
-  if (lastIndex < content.length) parts.push({ type: "text", value: content.slice(lastIndex) });
+  if (lastIndex < cleaned.length) parts.push({ type: "text", value: cleaned.slice(lastIndex) });
 
   return (
     <div className="space-y-2">
