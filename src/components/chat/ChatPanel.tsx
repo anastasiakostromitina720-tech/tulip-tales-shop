@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Send, UserRound, Loader2, RefreshCw } from "lucide-react";
 import { z } from "zod";
 import { useChat } from "@/lib/chat";
+import { MessageContent } from "./MessageContent";
 
 const introSchema = z.object({
   name: z.string().trim().min(2, "Укажите имя").max(100),
