@@ -1,9 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Pencil, Trash2, X, Copy, Search, Eye, EyeOff } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { formatPrice, resolveImage } from "@/lib/products";
+import { formatPrice, resolveImage, colorLabels, typeLabels } from "@/lib/products";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/products")({
@@ -22,6 +33,7 @@ type Product = {
   images: string[];
   in_stock: boolean;
   active: boolean;
+  created_at?: string;
 };
 
 const empty: Omit<Product, "id"> = {
@@ -30,9 +42,18 @@ const empty: Omit<Product, "id"> = {
   in_stock: true, active: true,
 };
 
+type SortKey = "new" | "name" | "price_asc" | "price_desc";
+
 function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Product | (Omit<Product, "id"> & { id?: string }) | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Product | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "bouquet" | "by_stem">("all");
+  const [colorFilter, setColorFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "hidden" | "out">("all");
+  const [sort, setSort] = useState<SortKey>("new");
 
   async function load() {
     const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
@@ -41,20 +62,49 @@ function AdminProducts() {
 
   useEffect(() => { load(); }, []);
 
-  async function remove(id: string) {
-    if (!confirm("Удалить товар?")) return;
-    const { error } = await supabase.from("products").delete().eq("id", id);
+  async function remove(p: Product) {
+    const { error } = await supabase.from("products").delete().eq("id", p.id);
     if (error) return toast.error(error.message);
     toast.success("Товар удалён");
+    setConfirmDelete(null);
     load();
   }
 
+  async function quickToggle(p: Product, field: "in_stock" | "active") {
+    const { error } = await supabase.from("products").update({ [field]: !p[field] }).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    setProducts((arr) => arr.map((x) => (x.id === p.id ? { ...x, [field]: !x[field] } : x)));
+  }
+
+  function duplicate(p: Product) {
+    const { id, created_at, ...rest } = p;
+    void id; void created_at;
+    setEditing({ ...rest, name: `${p.name} (копия)` });
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let arr = products.filter((p) => {
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      if (typeFilter !== "all" && p.type !== typeFilter) return false;
+      if (colorFilter !== "all" && p.color !== colorFilter) return false;
+      if (statusFilter === "active" && !p.active) return false;
+      if (statusFilter === "hidden" && p.active) return false;
+      if (statusFilter === "out" && p.in_stock) return false;
+      return true;
+    });
+    if (sort === "name") arr = [...arr].sort((a, b) => a.name.localeCompare(b.name, "ru"));
+    if (sort === "price_asc") arr = [...arr].sort((a, b) => Number(a.price) - Number(b.price));
+    if (sort === "price_desc") arr = [...arr].sort((a, b) => Number(b.price) - Number(a.price));
+    return arr;
+  }, [products, search, typeFilter, colorFilter, statusFilter, sort]);
+
   return (
     <div className="p-8 md:p-10">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-serif italic">Товары</h1>
-          <p className="text-muted-foreground mt-1">Управление каталогом</p>
+          <p className="text-muted-foreground mt-1">Управление каталогом · {filtered.length} из {products.length}</p>
         </div>
         <button
           onClick={() => setEditing({ ...empty })}
@@ -64,32 +114,91 @@ function AdminProducts() {
         </button>
       </div>
 
+      {/* Filters */}
+      <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto_auto_auto_auto]">
+        <div className="relative">
+          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            className="input pl-9"
+            placeholder="Поиск по названию"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select className="input" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}>
+          <option value="all">Все типы</option>
+          <option value="bouquet">Букеты</option>
+          <option value="by_stem">Поштучно</option>
+        </select>
+        <select className="input" value={colorFilter} onChange={(e) => setColorFilter(e.target.value)}>
+          <option value="all">Все цвета</option>
+          {Object.entries(colorLabels).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+        <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}>
+          <option value="all">Все</option>
+          <option value="active">Активные</option>
+          <option value="hidden">Скрытые</option>
+          <option value="out">Нет в наличии</option>
+        </select>
+        <select className="input" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+          <option value="new">Новые</option>
+          <option value="name">По названию</option>
+          <option value="price_asc">Цена ↑</option>
+          <option value="price_desc">Цена ↓</option>
+        </select>
+      </div>
+
       <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {products.map((p) => (
+        {filtered.length === 0 && (
+          <div className="col-span-full text-center text-muted-foreground py-16 bg-card rounded-3xl">
+            Ничего не найдено
+          </div>
+        )}
+        {filtered.map((p) => (
           <div key={p.id} className="bg-card rounded-3xl overflow-hidden">
-            <div className="aspect-[5/4] bg-muted">
+            <div className="aspect-[5/4] bg-muted relative">
               <img src={resolveImage(p.images?.[0])} alt={p.name} className="h-full w-full object-cover" />
+              <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+                <button
+                  onClick={() => quickToggle(p, "active")}
+                  className="bg-background/90 backdrop-blur rounded-full px-2.5 py-1 text-xs flex items-center gap-1.5"
+                  title={p.active ? "Скрыть" : "Показать"}
+                >
+                  {p.active ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
+                  {p.active ? "видно" : "скрыт"}
+                </button>
+                <button
+                  onClick={() => quickToggle(p, "in_stock")}
+                  className={`backdrop-blur rounded-full px-2.5 py-1 text-xs ${
+                    p.in_stock ? "bg-background/90" : "bg-destructive/90 text-destructive-foreground"
+                  }`}
+                >
+                  {p.in_stock ? "в наличии" : "нет"}
+                </button>
+              </div>
             </div>
             <div className="p-5">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="font-serif text-xl">{p.name}</div>
+                <div className="min-w-0">
+                  <div className="font-serif text-xl truncate">{p.name}</div>
                   <div className="text-sm text-muted-foreground mt-0.5">
-                    {p.type === "bouquet" ? "Букет" : "Поштучно"} · {formatPrice(Number(p.price))}
+                    {typeLabels[p.type]} · {formatPrice(Number(p.price))}
+                    {p.color && ` · ${colorLabels[p.color] ?? p.color}`}
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button onClick={() => setEditing(p)} className="p-2 hover:bg-muted rounded-full" aria-label="Редактировать">
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => duplicate(p)} className="p-2 hover:bg-muted rounded-full" aria-label="Дублировать" title="Дублировать">
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => setEditing(p)} className="p-2 hover:bg-muted rounded-full" aria-label="Редактировать" title="Редактировать">
                     <Pencil className="h-4 w-4" />
                   </button>
-                  <button onClick={() => remove(p.id)} className="p-2 hover:bg-muted rounded-full text-destructive" aria-label="Удалить">
+                  <button onClick={() => setConfirmDelete(p)} className="p-2 hover:bg-muted rounded-full text-destructive" aria-label="Удалить" title="Удалить">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-              </div>
-              <div className="mt-3 flex gap-2 text-xs">
-                {!p.active && <span className="px-2 py-0.5 rounded-full bg-muted">скрыт</span>}
-                {!p.in_stock && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">нет в наличии</span>}
               </div>
             </div>
           </div>
@@ -103,6 +212,23 @@ function AdminProducts() {
           onSaved={() => { setEditing(null); load(); }}
         />
       )}
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить товар?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Товар «{confirmDelete?.name}» будет удалён без возможности восстановления.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmDelete && remove(confirmDelete)} className="bg-destructive hover:bg-destructive/90">
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -116,26 +242,6 @@ function ProductDrawer({
 }) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  async function uploadImage(file: File) {
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: false });
-      if (error) throw error;
-      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f) => ({ ...f, images: [...(f.images ?? []), data.publicUrl] }));
-      toast.success("Фото загружено");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Не удалось загрузить";
-      toast.error(msg);
-    } finally {
-      setUploading(false);
-    }
-  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -178,92 +284,55 @@ function ProductDrawer({
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4 pb-6">
-            <FormField l="Название">
-              <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={200} />
-            </FormField>
-            <FormField l="Описание">
-              <textarea className="input min-h-[80px]" value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
-            </FormField>
-            <FormField l="Состав">
-              <input className="input" value={form.composition ?? ""} onChange={(e) => setForm({ ...form, composition: e.target.value })} maxLength={500} />
-            </FormField>
+              <FormField l="Название">
+                <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={200} />
+              </FormField>
+              <FormField l="Описание">
+                <textarea className="input min-h-[80px]" value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
+              </FormField>
+              <FormField l="Состав">
+                <input className="input" value={form.composition ?? ""} onChange={(e) => setForm({ ...form, composition: e.target.value })} maxLength={500} />
+              </FormField>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <FormField l="Цена, ₽">
-                <input type="number" min={0} className="input" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required />
-              </FormField>
-              <FormField l="Кол-во стеблей">
-                <input type="number" min={0} className="input" value={form.stems_count ?? ""} onChange={(e) => setForm({ ...form, stems_count: e.target.value ? Number(e.target.value) : null })} />
-              </FormField>
-              <FormField l="Тип">
-                <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as Product["type"] })}>
-                  <option value="bouquet">Букет</option>
-                  <option value="by_stem">Поштучно</option>
-                </select>
-              </FormField>
-              <FormField l="Цвет">
-                <select className="input" value={form.color ?? "pink"} onChange={(e) => setForm({ ...form, color: e.target.value })}>
-                  <option value="pink">Розовые</option>
-                  <option value="white">Белые</option>
-                  <option value="yellow">Жёлтые</option>
-                  <option value="red">Красные</option>
-                  <option value="mix">Микс</option>
-                  <option value="peony">Пионовидные</option>
-                </select>
-              </FormField>
-            </div>
-
-            <FormField l="Фотографии">
-              <div className="space-y-3">
-                {(form.images ?? []).length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {form.images.map((src, i) => (
-                      <div key={i} className="relative group">
-                        <img src={resolveImage(src)} className="aspect-square rounded-xl object-cover w-full" alt="" />
-                        <button
-                          type="button"
-                          onClick={() => setForm((f) => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }))}
-                          className="absolute top-1 right-1 bg-background/80 backdrop-blur p-1 rounded-full opacity-0 group-hover:opacity-100"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <FormField l="Цена, ₽">
+                  <input type="number" min={0} className="input" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required />
+                </FormField>
+                <FormField l="Кол-во стеблей">
+                  <input type="number" min={0} className="input" value={form.stems_count ?? ""} onChange={(e) => setForm({ ...form, stems_count: e.target.value ? Number(e.target.value) : null })} />
+                </FormField>
+                <FormField l="Тип">
+                  <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as Product["type"] })}>
+                    <option value="bouquet">Букет</option>
+                    <option value="by_stem">Поштучно</option>
+                  </select>
+                </FormField>
+                <FormField l="Цвет">
+                  <select className="input" value={form.color ?? "pink"} onChange={(e) => setForm({ ...form, color: e.target.value })}>
+                    {Object.entries(colorLabels).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
                     ))}
-                  </div>
-                )}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) uploadImage(f);
-                    e.target.value = "";
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm hover:border-primary disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploading ? "Загружаем..." : "Загрузить фото"}
-                </button>
+                  </select>
+                </FormField>
               </div>
-            </FormField>
 
-            <div className="flex flex-wrap gap-x-6 gap-y-3 pb-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={form.in_stock} onChange={(e) => setForm({ ...form, in_stock: e.target.checked })} />
-                В наличии
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
-                Показывать на сайте
-              </label>
-            </div>
+              <FormField l="Фотографии">
+                <ImageUploader
+                  images={form.images ?? []}
+                  onChange={(images) => setForm((f) => ({ ...f, images }))}
+                />
+              </FormField>
+
+              <div className="flex flex-wrap gap-x-6 gap-y-3 pb-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.in_stock} onChange={(e) => setForm({ ...form, in_stock: e.target.checked })} />
+                  В наличии
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+                  Показывать на сайте
+                </label>
+              </div>
             </div>
           </div>
 
