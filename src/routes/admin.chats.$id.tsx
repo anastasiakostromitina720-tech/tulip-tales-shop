@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, CheckCircle2, XCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { MessageContent } from "@/components/chat/MessageContent";
 
 export const Route = createFileRoute("/admin/chats/$id")({
   component: AdminChatDetail,
@@ -142,7 +143,7 @@ function AdminChatDetail() {
           return (
             <div key={m.id} className={`flex ${isUser ? "justify-start" : "justify-end"}`}>
               <div
-                className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words ${
+                className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm break-words ${
                   isUser
                     ? "bg-card border border-border"
                     : m.role === "operator"
@@ -153,7 +154,11 @@ function AdminChatDetail() {
                 <div className="text-[10px] uppercase tracking-wider opacity-60 mb-0.5">
                   {m.role === "user" ? session.customer_name : m.role === "operator" ? "Оператор" : "Лиза (ИИ)"}
                 </div>
-                {m.content}
+                {m.role === "assistant" ? (
+                  <MessageContent content={m.content} linkProducts={false} />
+                ) : (
+                  <span className="whitespace-pre-wrap break-words">{m.content}</span>
+                )}
               </div>
             </div>
           );

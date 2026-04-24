@@ -106,10 +106,10 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: true })
       .limit(60);
 
-    // Load catalog snapshot
+    // Load catalog snapshot (with first image)
     const { data: products } = await admin
       .from("products")
-      .select("id, name, price, type, color, stems_count, composition, in_stock")
+      .select("id, name, price, type, color, stems_count, composition, in_stock, images")
       .eq("active", true)
       .eq("in_stock", true)
       .limit(200);
@@ -119,7 +119,9 @@ Deno.serve(async (req) => {
         (p) =>
           `- ${p.name} | id=${p.id} | ${p.type} | ${p.color ?? "-"} | ${
             p.stems_count ?? "-"
-          } шт | ${p.price}₽${p.composition ? ` | состав: ${p.composition}` : ""}`,
+          } шт | ${p.price}₽${p.composition ? ` | состав: ${p.composition}` : ""}${
+            Array.isArray(p.images) && p.images.length > 0 ? ` | photo=yes` : ` | photo=no`
+          }`,
       )
       .join("\n");
 
@@ -135,6 +137,12 @@ Deno.serve(async (req) => {
 • Если клиент просит человека / жалуется / спрашивает что-то вне твоей компетенции — вызови request_operator.
 • НИКОГДА не выдумывай товары. Используй только id из каталога ниже.
 • Цены не округляй и не меняй — бери из каталога.
+
+ПОКАЗ ФОТО:
+• Когда рекомендуешь конкретный товар или показываешь варианты — обязательно вставляй маркер фото на отдельной строке: [[photo:PRODUCT_ID]] (PRODUCT_ID — это id из каталога).
+• Можно вставить несколько маркеров подряд, если показываешь несколько вариантов.
+• Вставляй маркер ТОЛЬКО для товаров с photo=yes. Не пиши markdown-ссылки на изображения, не выдумывай URL.
+• Пример: «Вот красивый вариант на день рождения:\n[[photo:abc-123]]\nБукет из 25 розовых тюльпанов — 3500₽.»
 
 Актуальный каталог:
 ${catalogText || "(каталог пуст)"}

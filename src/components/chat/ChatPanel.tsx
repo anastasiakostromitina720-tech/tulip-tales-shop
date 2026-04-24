@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Send, UserRound, Loader2, RefreshCw } from "lucide-react";
 import { z } from "zod";
 import { useChat } from "@/lib/chat";
+import { MessageContent } from "./MessageContent";
 
 const introSchema = z.object({
   name: z.string().trim().min(2, "Укажите имя").max(100),
@@ -177,7 +178,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap break-words ${
+        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words ${
           isUser
             ? "bg-primary text-primary-foreground rounded-br-md"
             : role === "operator"
@@ -186,7 +187,11 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
         }`}
       >
         {role === "operator" ? <div className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">Оператор</div> : null}
-        {content}
+        {isUser ? (
+          <span className="whitespace-pre-wrap break-words">{content}</span>
+        ) : (
+          <MessageContent content={content} />
+        )}
       </div>
     </div>
   );
