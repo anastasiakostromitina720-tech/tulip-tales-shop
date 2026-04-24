@@ -2,6 +2,8 @@ import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-r
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/lib/cart";
 import { AuthProvider } from "@/lib/auth";
+import { ChatProvider } from "@/lib/chat";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 import appCss from "../styles.css?url";
 
@@ -81,8 +83,11 @@ function RootComponent() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Outlet />
-        <Toaster position="top-center" />
+        <ChatProvider>
+          <Outlet />
+          <ChatWidget />
+          <Toaster position="top-center" />
+        </ChatProvider>
       </CartProvider>
     </AuthProvider>
   );

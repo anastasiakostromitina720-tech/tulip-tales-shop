@@ -25,6 +25,8 @@ import { Route as CartThanksRouteImport } from './routes/cart.thanks'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminChatsRouteImport } from './routes/admin.chats'
+import { Route as AdminChatsIdRouteImport } from './routes/admin.chats.$id'
 
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
@@ -106,6 +108,16 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminChatsRoute = AdminChatsRouteImport.update({
+  id: '/chats',
+  path: '/chats',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminChatsIdRoute = AdminChatsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminChatsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/delivery': typeof DeliveryRoute
   '/oferta': typeof OfertaRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/chats': typeof AdminChatsRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
@@ -124,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/catalog/$id': typeof CatalogIdRoute
   '/admin/': typeof AdminIndexRoute
   '/catalog/': typeof CatalogIndexRoute
+  '/admin/chats/$id': typeof AdminChatsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,6 +147,7 @@ export interface FileRoutesByTo {
   '/delivery': typeof DeliveryRoute
   '/oferta': typeof OfertaRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/chats': typeof AdminChatsRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
@@ -140,6 +155,7 @@ export interface FileRoutesByTo {
   '/catalog/$id': typeof CatalogIdRoute
   '/admin': typeof AdminIndexRoute
   '/catalog': typeof CatalogIndexRoute
+  '/admin/chats/$id': typeof AdminChatsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +168,7 @@ export interface FileRoutesById {
   '/delivery': typeof DeliveryRoute
   '/oferta': typeof OfertaRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/chats': typeof AdminChatsRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
@@ -159,6 +176,7 @@ export interface FileRoutesById {
   '/catalog/$id': typeof CatalogIdRoute
   '/admin/': typeof AdminIndexRoute
   '/catalog/': typeof CatalogIndexRoute
+  '/admin/chats/$id': typeof AdminChatsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,6 +190,7 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/oferta'
     | '/privacy'
+    | '/admin/chats'
     | '/admin/login'
     | '/admin/orders'
     | '/admin/products'
@@ -179,6 +198,7 @@ export interface FileRouteTypes {
     | '/catalog/$id'
     | '/admin/'
     | '/catalog/'
+    | '/admin/chats/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +208,7 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/oferta'
     | '/privacy'
+    | '/admin/chats'
     | '/admin/login'
     | '/admin/orders'
     | '/admin/products'
@@ -195,6 +216,7 @@ export interface FileRouteTypes {
     | '/catalog/$id'
     | '/admin'
     | '/catalog'
+    | '/admin/chats/$id'
   id:
     | '__root__'
     | '/'
@@ -206,6 +228,7 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/oferta'
     | '/privacy'
+    | '/admin/chats'
     | '/admin/login'
     | '/admin/orders'
     | '/admin/products'
@@ -213,6 +236,7 @@ export interface FileRouteTypes {
     | '/catalog/$id'
     | '/admin/'
     | '/catalog/'
+    | '/admin/chats/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -341,10 +365,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/chats': {
+      id: '/admin/chats'
+      path: '/chats'
+      fullPath: '/admin/chats'
+      preLoaderRoute: typeof AdminChatsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/chats/$id': {
+      id: '/admin/chats/$id'
+      path: '/$id'
+      fullPath: '/admin/chats/$id'
+      preLoaderRoute: typeof AdminChatsIdRouteImport
+      parentRoute: typeof AdminChatsRoute
+    }
   }
 }
 
+interface AdminChatsRouteChildren {
+  AdminChatsIdRoute: typeof AdminChatsIdRoute
+}
+
+const AdminChatsRouteChildren: AdminChatsRouteChildren = {
+  AdminChatsIdRoute: AdminChatsIdRoute,
+}
+
+const AdminChatsRouteWithChildren = AdminChatsRoute._addFileChildren(
+  AdminChatsRouteChildren,
+)
+
 interface AdminRouteChildren {
+  AdminChatsRoute: typeof AdminChatsRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminProductsRoute: typeof AdminProductsRoute
@@ -352,6 +403,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminChatsRoute: AdminChatsRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminProductsRoute: AdminProductsRoute,

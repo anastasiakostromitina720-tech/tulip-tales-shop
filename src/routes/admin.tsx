@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft, MessageCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,6 +14,7 @@ function AdminLayout() {
   const location = useLocation();
   const isLogin = location.pathname === "/admin/login";
   const [newCount, setNewCount] = useState(0);
+  const [chatBadge, setChatBadge] = useState(0);
 
   useEffect(() => {
     if (loading) return;
@@ -50,6 +51,24 @@ function AdminLayout() {
     return () => { supabase.removeChannel(channel); };
   }, [isAdmin]);
 
+  // Live counter of chats needing attention
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from("chat_sessions")
+        .select("*", { count: "exact", head: true })
+        .or("needs_operator.eq.true,status.eq.ticket");
+      setChatBadge(count ?? 0);
+    };
+    fetchCount();
+    const ch = supabase
+      .channel("admin-sidebar-chats")
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_sessions" }, fetchCount)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
+
   if (isLogin) {
     return <Outlet />;
   }
@@ -62,9 +81,10 @@ function AdminLayout() {
     );
   }
 
-  const nav: { to: "/admin" | "/admin/orders" | "/admin/products"; label: string; icon: typeof LayoutDashboard; exact?: boolean; badge?: number }[] = [
+  const nav: { to: "/admin" | "/admin/orders" | "/admin/products" | "/admin/chats"; label: string; icon: typeof LayoutDashboard; exact?: boolean; badge?: number }[] = [
     { to: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true },
     { to: "/admin/orders", label: "Заявки", icon: ClipboardList, badge: newCount },
+    { to: "/admin/chats", label: "Чаты", icon: MessageCircle, badge: chatBadge },
     { to: "/admin/products", label: "Товары", icon: Package },
   ];
 

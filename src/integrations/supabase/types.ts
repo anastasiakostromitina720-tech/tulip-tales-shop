@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["chat_role"]
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["chat_role"]
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["chat_role"]
+          session_id?: string
+        }
+        Relationships: []
+      }
+      chat_sessions: {
+        Row: {
+          admin_notes: string | null
+          consent_at: string
+          created_at: string
+          customer_name: string
+          id: string
+          last_message_at: string
+          needs_operator: boolean
+          order_id: string | null
+          phone: string
+          status: Database["public"]["Enums"]["chat_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          consent_at?: string
+          created_at?: string
+          customer_name: string
+          id?: string
+          last_message_at?: string
+          needs_operator?: boolean
+          order_id?: string | null
+          phone: string
+          status?: Database["public"]["Enums"]["chat_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          consent_at?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          last_message_at?: string
+          needs_operator?: boolean
+          order_id?: string | null
+          phone?: string
+          status?: Database["public"]["Enums"]["chat_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -178,6 +244,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      chat_session_exists: { Args: { _session_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -186,9 +253,13 @@ export type Database = {
         Returns: boolean
       }
       order_exists: { Args: { _order_id: string }; Returns: boolean }
+      request_operator: { Args: { _session_id: string }; Returns: undefined }
+      touch_chat_session: { Args: { _session_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
+      chat_role: "user" | "assistant" | "system" | "operator"
+      chat_status: "active" | "ticket" | "closed"
       order_status: "new" | "in_progress" | "completed" | "cancelled"
       product_type: "bouquet" | "by_stem"
     }
@@ -319,6 +390,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      chat_role: ["user", "assistant", "system", "operator"],
+      chat_status: ["active", "ticket", "closed"],
       order_status: ["new", "in_progress", "completed", "cancelled"],
       product_type: ["bouquet", "by_stem"],
     },
