@@ -18,12 +18,15 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
       <div className="container mx-auto max-w-7xl px-4 md:px-6 h-16 md:h-20 flex items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-2 group" onClick={() => setOpen(false)}>
-          <span className="text-2xl md:text-3xl font-serif italic tracking-tight">Тюльпаны</span>
-          <span className="hidden sm:inline text-sm text-muted-foreground font-script text-lg">
-            · Москва
-          </span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link to="/" className="flex items-center gap-2 group" onClick={() => setOpen(false)}>
+            <span className="text-2xl md:text-3xl font-serif italic tracking-tight">Тюльпаны</span>
+            <span className="hidden sm:inline text-sm text-muted-foreground font-script text-lg">
+              · Москва
+            </span>
+          </Link>
+        </div>
 
         <nav className="hidden md:flex items-center gap-7">
           {nav.map((n) => (
