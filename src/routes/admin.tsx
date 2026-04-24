@@ -1,7 +1,8 @@
 import { createFileRoute, Link, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -12,6 +13,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isLogin = location.pathname === "/admin/login";
+  const [newCount, setNewCount] = useState(0);
 
   useEffect(() => {
     if (loading) return;
@@ -21,10 +23,32 @@ function AdminLayout() {
       return;
     }
     if (user && !isAdmin) {
-      // not admin: stay on a notice in login
       navigate({ to: "/admin/login" });
     }
   }, [loading, user, isAdmin, isLogin, navigate]);
+
+  // Live counter of new orders
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "new");
+      setNewCount(count ?? 0);
+    };
+    fetchCount();
+
+    const channel = supabase
+      .channel("admin-sidebar-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchCount();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin]);
 
   if (isLogin) {
     return <Outlet />;
@@ -38,9 +62,9 @@ function AdminLayout() {
     );
   }
 
-  const nav: { to: "/admin" | "/admin/orders" | "/admin/products"; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
+  const nav: { to: "/admin" | "/admin/orders" | "/admin/products"; label: string; icon: typeof LayoutDashboard; exact?: boolean; badge?: number }[] = [
     { to: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true },
-    { to: "/admin/orders", label: "Заявки", icon: ClipboardList },
+    { to: "/admin/orders", label: "Заявки", icon: ClipboardList, badge: newCount },
     { to: "/admin/products", label: "Товары", icon: Package },
   ];
 
@@ -61,7 +85,12 @@ function AdminLayout() {
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors"
             >
               <n.icon className="h-4 w-4" />
-              {n.label}
+              <span className="flex-1">{n.label}</span>
+              {n.badge ? (
+                <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-medium min-w-[20px] text-center">
+                  {n.badge}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>
