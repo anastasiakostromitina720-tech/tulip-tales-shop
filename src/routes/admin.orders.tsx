@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/products";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { X, Search, Download, Copy as CopyIcon, Phone } from "lucide-react";
 
 export const Route = createFileRoute("/admin/orders")({
   component: AdminOrders,
@@ -44,9 +44,20 @@ const statusColors: Record<Order["status"], string> = {
   cancelled: "bg-muted text-muted-foreground",
 };
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+function tomorrowISO() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<"all" | Order["status"]>("all");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "tomorrow">("all");
+  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
 
@@ -57,6 +68,24 @@ function AdminOrders() {
 
   useEffect(() => { load(); }, []);
 
+  // Realtime
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-orders")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
+        setOrders((prev) => [payload.new as Order, ...prev]);
+        toast.success(`Новая заявка от ${(payload.new as Order).customer_name}`);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
+        setOrders((prev) => prev.map((o) => (o.id === (payload.new as Order).id ? (payload.new as Order) : o)));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "orders" }, (payload) => {
+        setOrders((prev) => prev.filter((o) => o.id !== (payload.old as { id: string }).id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   useEffect(() => {
     if (!selected) return;
     supabase.from("order_items").select("*").eq("order_id", selected.id).then(({ data }) => {
@@ -64,40 +93,102 @@ function AdminOrders() {
     });
   }, [selected]);
 
-  const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return orders.filter((o) => {
+      if (filter !== "all" && o.status !== filter) return false;
+      if (dateFilter === "today" && o.delivery_date !== todayISO()) return false;
+      if (dateFilter === "tomorrow" && o.delivery_date !== tomorrowISO()) return false;
+      if (q && !`${o.customer_name} ${o.phone}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [orders, filter, dateFilter, search]);
 
   async function updateStatus(id: string, status: Order["status"]) {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Статус обновлён");
     setSelected((s) => (s ? { ...s, status } : s));
-    load();
   }
 
   async function updateNotes(id: string, admin_notes: string) {
     const { error } = await supabase.from("orders").update({ admin_notes }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Заметка сохранена");
-    load();
+  }
+
+  function exportCSV() {
+    const headers = ["Дата", "Клиент", "Телефон", "Адрес", "Доставка", "Время", "Комментарий", "Сумма", "Статус"];
+    const rows = filtered.map((o) => [
+      new Date(o.created_at).toLocaleString("ru-RU"),
+      o.customer_name,
+      o.phone,
+      o.address ?? "",
+      o.delivery_date ?? "",
+      o.delivery_time ?? "",
+      o.comment ?? "",
+      String(o.total),
+      statusLabels[o.status],
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-${todayISO()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
     <div className="p-8 md:p-10">
-      <h1 className="text-3xl font-serif italic">Заявки</h1>
-      <p className="text-muted-foreground mt-1">Все заявки клиентов</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-3xl font-serif italic">Заявки</h1>
+          <p className="text-muted-foreground mt-1">Все заявки клиентов · {filtered.length} из {orders.length}</p>
+        </div>
+        <button
+          onClick={exportCSV}
+          className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm hover:border-primary"
+        >
+          <Download className="h-4 w-4" /> Экспорт CSV
+        </button>
+      </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {(["all", "new", "in_progress", "completed", "cancelled"] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-4 py-1.5 rounded-full text-sm border ${
-              filter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {s === "all" ? "Все" : statusLabels[s]}
-          </button>
-        ))}
+      <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto]">
+        <div className="relative">
+          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            className="input pl-9"
+            placeholder="Поиск по имени или телефону"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select className="input" value={dateFilter} onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)}>
+          <option value="all">Все даты</option>
+          <option value="today">Доставка сегодня</option>
+          <option value="tomorrow">Доставка завтра</option>
+        </select>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {(["all", "new", "in_progress", "completed", "cancelled"] as const).map((s) => {
+          const count = s === "all" ? orders.length : orders.filter((o) => o.status === s).length;
+          return (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`px-4 py-1.5 rounded-full text-sm border ${
+                filter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {s === "all" ? "Все" : statusLabels[s]} <span className="opacity-60">· {count}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-6 bg-card rounded-3xl overflow-hidden">
@@ -107,19 +198,21 @@ function AdminOrders() {
               <th className="text-left p-4">Дата</th>
               <th className="text-left p-4">Клиент</th>
               <th className="text-left p-4">Телефон</th>
+              <th className="text-left p-4">Доставка</th>
               <th className="text-left p-4">Сумма</th>
               <th className="text-left p-4">Статус</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-10 text-center text-muted-foreground">Заявок нет</td></tr>
+              <tr><td colSpan={6} className="p-10 text-center text-muted-foreground">Заявок нет</td></tr>
             )}
             {filtered.map((o) => (
               <tr key={o.id} onClick={() => setSelected(o)} className="border-t border-border hover:bg-muted/40 cursor-pointer">
                 <td className="p-4 whitespace-nowrap">{new Date(o.created_at).toLocaleString("ru-RU")}</td>
                 <td className="p-4 font-medium">{o.customer_name}</td>
                 <td className="p-4">{o.phone}</td>
+                <td className="p-4 text-muted-foreground">{o.delivery_date ?? "—"} {o.delivery_time ?? ""}</td>
                 <td className="p-4">{formatPrice(Number(o.total))}</td>
                 <td className="p-4">
                   <span className={`px-2.5 py-1 rounded-full text-xs ${statusColors[o.status]}`}>
@@ -152,6 +245,11 @@ function OrderDrawer({
   onStatus: (s: Order["status"]) => void; onNotes: (n: string) => void;
 }) {
   const [notes, setNotes] = useState(order.admin_notes ?? "");
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => toast.success(`${label} скопирован`));
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
       <div className="bg-background w-full max-w-xl h-full overflow-y-auto p-8" onClick={(e) => e.stopPropagation()}>
@@ -165,8 +263,23 @@ function OrderDrawer({
 
         <div className="mt-6 space-y-4">
           <Field l="Клиент" v={order.customer_name} />
-          <Field l="Телефон" v={order.phone} />
-          <Field l="Адрес" v={order.address ?? "—"} />
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Телефон</div>
+            <div className="text-sm mt-1 flex items-center gap-2">
+              <a href={`tel:${order.phone}`} className="text-primary hover:underline">{order.phone}</a>
+              <button onClick={() => copy(order.phone, "Телефон")} className="p-1 hover:bg-muted rounded"><CopyIcon className="h-3 w-3" /></button>
+              <a href={`tel:${order.phone}`} className="p-1 hover:bg-muted rounded"><Phone className="h-3 w-3" /></a>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Адрес</div>
+            <div className="text-sm mt-1 flex items-start gap-2">
+              <span className="flex-1">{order.address ?? "—"}</span>
+              {order.address && (
+                <button onClick={() => copy(order.address!, "Адрес")} className="p-1 hover:bg-muted rounded shrink-0"><CopyIcon className="h-3 w-3" /></button>
+              )}
+            </div>
+          </div>
           <Field l="Дата доставки" v={order.delivery_date ?? "—"} />
           <Field l="Время" v={order.delivery_time ?? "—"} />
           <Field l="Комментарий" v={order.comment ?? "—"} />
