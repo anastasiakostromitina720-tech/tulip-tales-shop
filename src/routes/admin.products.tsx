@@ -71,7 +71,8 @@ function AdminProducts() {
   }
 
   async function quickToggle(p: Product, field: "in_stock" | "active") {
-    const { error } = await supabase.from("products").update({ [field]: !p[field] }).eq("id", p.id);
+    const patch = field === "in_stock" ? { in_stock: !p.in_stock } : { active: !p.active };
+    const { error } = await supabase.from("products").update(patch).eq("id", p.id);
     if (error) return toast.error(error.message);
     setProducts((arr) => arr.map((x) => (x.id === p.id ? { ...x, [field]: !x[field] } : x)));
   }
