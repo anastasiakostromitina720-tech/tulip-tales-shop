@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, CheckCircle2, XCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { MessageContent } from "@/components/chat/MessageContent";
 
 export const Route = createFileRoute("/admin/chats/$id")({
   component: AdminChatDetail,
