@@ -47,7 +47,7 @@ function HomePage() {
         <div className="container mx-auto max-w-7xl px-4 md:px-6 pt-10 md:pt-16 pb-16 md:pb-24 grid md:grid-cols-12 gap-10 items-center relative">
           <div className="md:col-span-6 lg:col-span-5">
             <p className="font-script text-3xl md:text-4xl text-primary">здравствуй, весна</p>
-            <h1 className="mt-3 text-5xl md:text-6xl lg:text-7xl font-serif italic leading-[1.05]">
+            <h1 className="mt-3 text-6xl md:text-8xl lg:text-9xl font-serif italic leading-[1.02]">
               Весна приходит<br />
               <span className="text-primary">букетами</span>
             </h1>
